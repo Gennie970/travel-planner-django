@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Map</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Carter+One&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+}
+
+/* 헤더 */
+header {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-family: "Carter One", system-ui;
+  font-size: 28px;
+  margin: 0;
+  color: #000405;
+}
+
+p {
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+/* 지도 */
+.map {
+  max-width: 900px;
+  margin: 30px auto;
+  position: relative;
+  transition: transform 0.1s ease;
+}
+
+/* 🔥 확대 효과 */
+.map.zoom {
+  transform: scale(2.5);
+}
+
+/* 지도 이미지 */
+.map img {
+  width: 100%;
+  border-radius: 20px;
+}
+
+/* 핀 */
+.pin {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #60a5fa;
+  border-radius: 50%;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 4px rgba(233, 235, 238, 0.2);
+  transition: 0.2s;
+}
+
+.pin:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* 라벨 */
+.label {
+  position: absolute;
+  background: rgba(248, 248, 249, 0.9);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translate(-50%, -120%);
+  display: none;
+}
+
+.pin:hover .label {
+  display: block;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Travel Planner</h1>
+  <p>Select a destination</p>
+</header>
+
+<div class="map" id="map">
+
+  <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg">
+
+    <!-- 🇯🇵 후쿠오카 -->
+    <div class="pin" style="top:35%; left:85%;"
+        onclick="goToPage('/fukuoka/')">
+      <div class="label">🇯🇵 Fukuoka</div>
+    </div>
+
+    <!-- 🇨🇭 스위스 -->
+    <div class="pin" style="top:31%; left:52%;"
+        onclick="goToPage('swiss.html')">
+      <div class="label">🇨🇭 Switzerland</div>
+    </div>
+
+    <!-- 🇮🇹 이탈리아 -->
+    <div class="pin" style="top:35%; left:54%;"
+        onclick="goToPage('/italy/')">
+      <div class="label">🇮🇹 Italy</div>
+    </div>
+
+</div>
+
+
+<script>
+// 👉 지도 클릭하면 초기화
+document.addEventListener("click", function(e) {
+  const card = document.getElementById("card");
+  const map = document.getElementById("map");
+
+  // 핀/카드 클릭 아닐 때만 닫기
+  if (!e.target.closest(".pin") && !e.target.closest(".card")) {
+    card.style.display = "none";
+    map.classList.remove("zoom");
+  }
+});
+// pin클릭할때 효과
+function goToPage(page) {
+  const map = document.getElementById("map");
+
+  // 줌인
+  map.classList.add("zoom");
+
+  // 살짝 기다렸다가 이동
+  setTimeout(() => {
+    location.href = page;
+  }, 200);
+}
+</script>
+
+</body>
+</html>

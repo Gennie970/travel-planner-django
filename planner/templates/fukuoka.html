@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>후쿠오카 여행</title>
+
+<style>
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #fffafc;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #ff7aa2;
+}
+
+.page { display: none; }
+.active { display: block; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  table-layout: fixed;
+}
+
+th {
+  background: #ffd6e0;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+th:first-child, td:first-child {
+  width: 80px;
+}
+
+th:not(:first-child), td:not(:first-child) {
+  width: calc((100% - 80px) / 3);
+}
+
+th:hover {
+  background: #ffb6c9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+td {
+  padding: 10px;
+  border-top: 1px solid #eee;
+  word-break: break-word;
+}
+
+tr:nth-child(even) {
+  background: #fff5f8;
+}
+
+.item {
+  background: white;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+input {
+  border: none;
+  border-bottom: 2px solid #ffc0cb;
+  background: transparent;
+}
+
+button {
+  background: #ff9bb3;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #ff7aa2;
+}
+</style>
+</head>
+
+<body>
+
+<h1>✈️ 후쿠오카 여행 💗</h1>
+
+<div id="main" class="page active"></div>
+<div id="detail" class="page"></div>
+
+<script>
+
+let defaultData = {
+  "2026-04-25": [
+    { time:"10:00", text:"기상", cost:"" },
+    { time:"15:35", text:"✈️출발 인천공항", cost:"504355" },
+    { time:"17:00", text:"✈️도착 후쿠오카 공항", cost:"" },
+    { time:"18:00", text:"🏯 APA Hotel Hakata Gion Station", cost:"438512" },
+    { time:"18:30", text:"🍣 스시사카바 사시스 하카타마잉구점", cost:"88507" },
+    { time:"19:30", text:"🛍️ 하카타역 구경", cost:"" },
+    { time:"20:30", text:"🛒 BON REPAS", cost:"65286" },
+    { time:"21:00", text:"🏯 Lawson", cost:"6298" },
+    { time:"21:30", text:"🐙 츠키지 긴타코", cost:"7309" },
+    { time:"22:30", text:"🏯 APA Hotel Hakata Gion Station", cost:"" }
+  ],
+  "2026-04-26": [
+    { time:"10:30", text:"☔ 츠루하 텐진점", cost:"30383" },
+    { time:"11:15", text:"☕ Family mart 커피", cost:"1751" },
+    { time:"12:30", text:"🍜 신신라멘 텐진본점", cost:"39856" },
+    { time:"13:30", text:"☕ Seattle's best coffee", cost:"8342" },
+    { time:"14:00", text:"🛍 캐널시티 하카타", cost:"" },
+    { time:"15:00", text:"🍧 Crape", cost:"4910" },
+    { time:"15:35", text:"👕 Noir 쿨잠옷 쇼핑", cost:"45740" },
+    { time:"17:00", text:"💝 Taito Station 인형뽑기", cost:"24088" },
+    { time:"19:00", text:"🍱 우나기노에이토 캐널시티점", cost:"97396" },
+    { time:"20:00", text:"☕ 시나모롱 카페", cost:"15305" },
+    { time:"21:00", text:"🍪 캐널시티 과자가게", cost:"100000" },
+    { time:"21:30", text:"🐙 츠키지 긴타코", cost:"8812" },
+  ],
+  "2026-04-27": [
+    { time:"07:00", text:"공항 이동", cost:"" },
+    { time:"08:00", text:"🍮 오하요푸딩*8", cost:"25772" },
+    { time:"09:45", text:"✈️ 출발 후쿠오카 공항", cost:"" },
+    { time:"11:15", text:"✈️ 도착 인천공항", cost:"" }
+  ]
+};
+
+let data = {};
+
+// 🔥 데이터 불러오기 (Django 연결)
+async function loadData() {
+  try {
+    const res = await fetch("/api/trip/");
+    data = await res.json();
+
+    if (!data || Object.keys(data).length === 0) {
+      data = defaultData;
+    }
+
+  } catch (e) {
+    console.log("API 실패 → defaultData 사용");
+    data = defaultData;
+  }
+
+  renderMain();
+}
+
+// 🔥 저장
+function save() {
+  fetch("/api/trip/update/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+}
+
+// 🔥 메인 화면
+function renderMain() {
+  let dates = Object.keys(data);
+  let times = new Set();
+
+  dates.forEach(d => {
+    data[d].forEach(i => times.add(i.time));
+  });
+
+  times = Array.from(times).sort();
+
+  let total = 0;
+
+  let html = "<h2>📅 전체 일정표</h2><table>";
+  html += "<tr><th>시간</th>";
+
+  dates.forEach(d => {
+    html += `<th onclick="goDetail('${d}')">${d}</th>`;
+  });
+
+  html += "</tr>";
+
+  times.forEach(t => {
+    html += `<tr><td>${t}</td>`;
+
+    dates.forEach(d => {
+      const item = data[d].find(i => i.time === t);
+
+      if (item && item.cost) {
+        total += Number(item.cost) || 0;
+      }
+
+      html += `<td>
+        ${item ? `
+          ${item.text}<br>
+          <small style="color:#999;">
+            ${item.cost ? "💰 " + Number(item.cost).toLocaleString() : ""}
+          </small>
+        ` : "-"}
+      </td>`;
+    });
+
+    html += "</tr>";
+  });
+
+  html += "</table>";
+
+  // 🔥 총 비용 표시
+  html += `
+    <h3 style="text-align:center; margin-top:20px;">
+      💸 총 비용: ${total.toLocaleString()} 원
+    </h3>
+  `;
+
+  document.getElementById("main").innerHTML = html;
+}
+
+// 🔥 상세
+function goDetail(date) {
+  document.getElementById("main").classList.remove("active");
+  document.getElementById("detail").classList.add("active");
+
+  let html = `<button onclick="goMain()">⬅ 돌아가기</button><h2>${date}</h2>`;
+
+  data[date].forEach((item, i) => {
+    html += `
+      <div class="item">
+        ⏰ <input value="${item.time}" onchange="update('${date}',${i},'time',this.value)"><br>
+        ✏️ <input value="${item.text}" onchange="update('${date}',${i},'text',this.value)"><br>
+        💰 <input value="${item.cost}" onchange="update('${date}',${i},'cost',this.value)">
+      </div>
+    `;
+  });
+
+  html += `<button onclick="addItem('${date}')">+ 추가</button>`;
+
+  document.getElementById("detail").innerHTML = html;
+}
+
+function goMain() {
+  document.getElementById("main").classList.add("active");
+  document.getElementById("detail").classList.remove("active");
+  renderMain();
+}
+
+// 🔥 수정
+function update(date, i, key, val) {
+  data[date][i][key] = val;
+  save();
+  renderMain();
+}
+
+// 🔥 추가
+function addItem(date) {
+  data[date].push({ time:"", text:"", cost:"" });
+  save();
+  renderDetail(date);
+}
+
+function renderDetail(date) {
+  goDetail(date);
+}
+
+// 시작
+loadData();
+
+</script>
+
+</body>
+</html>

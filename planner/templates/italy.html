@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Italy Trip Planner</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:'Pretendard', Arial, sans-serif;
+  min-height:100vh;
+
+  /* 🇮🇹 배경 이미지 */
+  background:
+    linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
+    url("https://images.unsplash.com/photo-1525874684015-58379d421a52?q=80&w=2000&auto=format&fit=crop");
+
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+
+  color:white;
+  padding:20px;
+}
+
+/* 살짝 유리 느낌 */
+.glass{
+  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:24px;
+  padding:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.2);
+}
+
+h1{
+  text-align:center;
+  font-size:42px;
+  margin-bottom:25px;
+}
+
+.page{
+  display:none;
+}
+
+.active{
+  display:block;
+}
+
+.top-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+button{
+  border:none;
+  background:#ffffff;
+  color:#333;
+  padding:10px 16px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:600;
+  transition:0.2s;
+}
+
+button:hover{
+  transform:translateY(-2px);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  overflow:hidden;
+  border-radius:18px;
+  table-layout:fixed;
+}
+
+th{
+  background:rgba(255,255,255,0.25);
+  padding:14px;
+  font-size:15px;
+  cursor:pointer;
+}
+
+td{
+  background:rgba(255,255,255,0.12);
+  padding:14px 10px;
+  border-top:1px solid rgba(255,255,255,0.12);
+  text-align:center;
+  word-break:break-word;
+}
+
+tr:hover td{
+  background:rgba(255,255,255,0.18);
+}
+
+.item{
+  background:rgba(255,255,255,0.15);
+  padding:18px;
+  border-radius:18px;
+  margin-bottom:14px;
+}
+
+input{
+  width:100%;
+  margin-top:6px;
+  margin-bottom:12px;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.9);
+  font-size:15px;
+}
+
+label{
+  font-size:14px;
+  opacity:0.9;
+}
+
+.empty{
+  text-align:center;
+  padding:40px 20px;
+  font-size:18px;
+  opacity:0.9;
+}
+
+@media(max-width:768px){
+
+  body{
+    padding:14px;
+  }
+
+  h1{
+    font-size:30px;
+  }
+
+  table{
+    font-size:13px;
+  }
+
+  th,td{
+    padding:10px 6px;
+  }
+}
+
+.map-link:hover{
+  opacity:0.7;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<h1>🇮🇹 Italy Trip Planner</h1>
+
+<div id="main" class="page active glass"></div>
+<div id="detail" class="page glass"></div>
+
+<script>
+
+let data = {};
+
+// 🔥 데이터 로드
+async function loadData(){
+
+  try{
+
+    const res = await fetch("/api/trip/italy/");
+    data = await res.json();
+
+    // 데이터 없으면 빈 객체
+    if(!data || typeof data !== "object"){
+      data = {};
+    }
+
+  }catch(e){
+
+    data = {};
+  }
+
+  renderMain();
+}
+
+
+// 🔥 저장
+async function save(){
+
+  try{
+
+    await fetch("/api/trip/italy/update/",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(data)
+    });
+
+  }catch(e){
+    console.log("저장 실패");
+  }
+}
+
+
+// 🔥 메인
+function renderMain(){
+
+  const main = document.getElementById("main");
+
+  const dates = Object.keys(data).sort();
+
+  if(dates.length === 0){
+
+    main.innerHTML = `
+      <div class="top-bar">
+        <h2>📅 여행 일정</h2>
+        <button onclick="addDate()">+ 날짜 추가</button>
+      </div>
+
+      <div class="empty">
+        아직 일정이 없어요 ✨<br><br>
+        날짜 추가 버튼 눌러서 여행 계획 만들기
+      </div>
+    `;
+
+    return;
+  }
+
+  let times = new Set();
+  let totalCost = 0;
+
+  dates.forEach(date=>{
+
+    data[date].forEach(item=>{
+
+      if(item.time){
+        times.add(item.time);
+      }
+
+      // 총 비용 계산
+      const cost = Number(
+        String(item.cost).replace(/[^0-9]/g,"")
+      );
+
+      if(!isNaN(cost)){
+        totalCost += cost;
+      }
+
+    });
+
+  });
+
+  times = Array.from(times).sort();
+
+  let html = `
+    <div class="top-bar">
+      <h2>📅 여행 일정</h2>
+      <button onclick="addDate()">+ 날짜 추가</button>
+    </div>
+  `;
+
+  html += `<table>`;
+  html += `<tr><th>시간</th>`;
+
+  dates.forEach(date=>{
+    html += `<th onclick="goDetail('${date}')">${date}</th>`;
+  });
+
+  html += `</tr>`;
+
+  if(times.length === 0){
+
+    html += `<tr>`;
+
+    html += `<td>-</td>`;
+
+    dates.forEach(date=>{
+      html += `<td onclick="goDetail('${date}')">일정 추가하기 ✏️</td>`;
+    });
+
+    html += `</tr>`;
+
+  }else{
+
+    times.forEach(time=>{
+
+      html += `<tr>`;
+      html += `<td>${time}</td>`;
+
+      dates.forEach(date=>{
+
+        const item = data[date].find(i=>i.time === time);
+
+        if(item){
+
+          html += `
+            <td>
+              <div style="
+                    font-weight:600;
+                    cursor:pointer;
+                    text-decoration:underline;
+                "
+                onclick="openMap('${item.text}')"
+                >
+                ${item.text}
+              </div>
+
+              ${
+                item.cost
+                ? `<div style="
+                    margin-top:6px;
+                    font-size:12px;
+                    opacity:0.85;
+                  ">
+                    💰 ${item.cost}
+                  </div>`
+                : ""
+              }
+            </td>
+          `;
+
+        }else{
+
+          html += `<td>-</td>`;
+        }
+
+      });
+
+      html += `</tr>`;
+    });
+  }
+
+  html += `</table>`;
+
+  // 총 비용 표시
+  html += `
+    <div style="
+      margin-top:20px;
+      text-align:right;
+      font-size:22px;
+      font-weight:bold;
+    ">
+      💸 총 예상 비용 :
+      ₩ ${totalCost.toLocaleString()}
+    </div>
+  `;
+
+  main.innerHTML = html;
+}
+
+
+// 🔥 상세 페이지
+function goDetail(date){
+
+  document.getElementById("main").classList.remove("active");
+  document.getElementById("detail").classList.add("active");
+
+  let html = `
+    <div class="top-bar">
+      <button onclick="goMain()">⬅ 돌아가기</button>
+      <button onclick="deleteDate('${date}')">🗑 날짜 삭제</button>
+    </div>
+
+    <h2>${date}</h2>
+  `;
+
+  if(data[date].length === 0){
+
+    html += `
+      <div class="empty">
+        아직 일정 없음 ✨
+      </div>
+    `;
+  }
+
+  data[date].forEach((item,index)=>{
+
+    html += `
+      <div class="item">
+
+        <label>⏰ 시간</label>
+        <input
+          value="${item.time}"
+          onchange="update('${date}',${index},'time',this.value)"
+        >
+
+        <label>✏️ 일정</label>
+        <input
+          value="${item.text}"
+          onchange="update('${date}',${index},'text',this.value)"
+        >
+
+        <label>💰 비용</label>
+        <input
+          value="${item.cost}"
+          onchange="update('${date}',${index},'cost',this.value)"
+        >
+
+        <button onclick="deleteItem('${date}',${index})">
+          삭제
+        </button>
+
+      </div>
+    `;
+  });
+
+  html += `
+    <button onclick="addItem('${date}')">
+      + 일정 추가
+    </button>
+  `;
+
+  document.getElementById("detail").innerHTML = html;
+}
+
+
+// 🔥 메인 복귀
+function goMain(){
+
+  document.getElementById("main").classList.add("active");
+  document.getElementById("detail").classList.remove("active");
+
+  renderMain();
+}
+
+
+// 🔥 수정
+function update(date,index,key,value){
+
+  data[date][index][key] = value;
+
+  save();
+}
+
+
+// 🔥 일정 추가
+function addItem(date){
+
+  data[date].push({
+    time:"",
+    text:"",
+    cost:""
+  });
+
+  save();
+
+  goDetail(date);
+}
+
+
+// 🔥 일정 삭제
+function deleteItem(date,index){
+
+  data[date].splice(index,1);
+
+  save();
+
+  goDetail(date);
+}
+
+
+// 🔥 날짜 추가
+function addDate(){
+
+  const date = prompt("날짜 입력 (예: 2026-08-02)");
+
+  if(!date) return;
+
+  if(!data[date]){
+    data[date] = [];
+  }
+
+  save();
+
+  renderMain();
+}
+
+
+// 🔥 날짜 삭제
+function deleteDate(date){
+
+  const ok = confirm(`${date} 삭제할까요?`);
+
+  if(!ok) return;
+
+  delete data[date];
+
+  save();
+
+  goMain();
+}
+
+
+// 시작
+loadData();
+
+//지도연동
+function openMap(place){
+
+  const query = encodeURIComponent(place);
+
+  window.open(
+    `https://www.google.com/maps/search/?api=1&query=${query}`,
+    "_blank"
+  );
+}
+</script>
+
+</body>
+</html>
