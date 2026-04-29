@@ -70,15 +70,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'travel_planner.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+import dj_database_url
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASS = {
+        'default' : dj_database_url.parse(
+            "postgresql://travel_planner_django_user:RjM0MV1teaYVlUHzwLoDErnWShF6y0eL@dpg-d7oqhpbbc2fs73cdgg5g-a/travel_planner_django"
+            )
+        }
 
 
 # Password validation
