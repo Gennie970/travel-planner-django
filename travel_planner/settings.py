@@ -70,13 +70,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'travel_planner.wsgi.application'
 
 
+import os
 import dj_database_url
 
-DATABASS = {
-        'default' : dj_database_url.parse(
-            "postgresql://travel_planner_django_user:RjM0MV1teaYVlUHzwLoDErnWShF6y0eL@dpg-d7oqhpbbc2fs73cdgg5g-a/travel_planner_django"
-            )
-        }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get("DATABASE_URL")
+    )
+}
+
+
+
+
+
+
 
 
 # Password validation
